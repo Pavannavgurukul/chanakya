@@ -10,7 +10,7 @@ from io import BytesIO
 def render_pdf_phantomjs(template_name , **kwargs):
     """
         Helper to render a PDF from HTML using phantomjs.
-        
+
         Params:
             `template_name` : Name of the template which need to be converted to PDF.
             `kwargs` : All the instance or data required inside the render_template to render it to HTML.
