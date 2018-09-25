@@ -139,6 +139,21 @@ class TestStart(Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('enrollment_key', required=True, type=str)
 
+    option_obj = api.model('options',{
+        "id": fields.Integer(required=False),
+        "hi_text": fields.String(required=True),
+        "en_text": fields.String(required=True)
+    })
+
+    question_obj = api.model('questions',{
+        'id': fields.Integer(required=True),
+        'en_text': fields.String(required=True),
+        'hi_text': fields.String(required=True),
+        'difficulty': fields.String(attribute=lambda x: x.difficulty.value if x else None, required=True),
+        'topic': fields.String(attribute=lambda x: x.topic.value if x else None, required=True),
+        'type': fields.String(attribute=lambda x: x.type.value if x else None, required=True),
+        'options': fields.List(fields.Nested(option_obj), required=True)
+    })
     get_response = api.model('GET_start_test_response',{
         'error':fields.Boolean(default=False),
         'data':fields.List(fields.Nested(question_obj)),
@@ -255,7 +270,18 @@ class MoreStudentDetail(Resource):
         'error':fields.Boolean(default=False),
         'message':fields.String
     })
+    MORE_DETAILS_DESCRIPTION = """
+        Possible values of different JSON keys which can be passed.
 
+        - 'enrollment_key': "EDR321"
+        - 'caste': ["SC (Scheduled Caste)", "ST (Scheduled Tribe)", "OBC (Other Backward Classes)",
+                    "General","Others"]
+        - 'religion': ['Hindu', 'Muslim', 'Christian', 'Jain']
+        - 'monthly_family_income': 23000 Total family montly earning.
+        - 'total_family_member': 6 Total number of family member.
+        - 'family_member_income_detail': Some extra detail about how the family earn there total income.
+
+    """
     @api.marshal_with(post_response)
     @api.expect(post_payload_model)
     def post(self):
