@@ -106,13 +106,13 @@ class OfflinePaper(Resource):
             'error':True
         }
 
-@api.route('/offline_paper/<id>/upload_results')
+@api.route('/offline_paper/upload_results')
 class OfflineCSVUpload(Resource):
 	post_parser = reqparse.RequestParser(argument_class=FileStorageArgument)
 	post_parser.add_argument('partner_csv', required=True, type=FileStorage, location='files')
 
 	@api.doc(parser=post_parser)
-	def post(self, id):
+	def post(self):
 		args = self.post_parser.parse_args()
 		csv = args.get('partner_csv')
 
