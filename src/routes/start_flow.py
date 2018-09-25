@@ -1,19 +1,29 @@
-from flask_restplus import Resource, reqparse, fields
-from chanakya.src import api, app, db
-from chanakya.src.models import Student, IncomingCalls, StudentContact
-from flask_restful.inputs import boolean
+from flask_restplus import Resource, reqparse, fields, Namespace
+
+from chanakya.src import app, db
+from chanakya.src.models import Student, IncomingCalls, StudentContact, StudentStageTransition
+from chanakya.src.google_sheet_sync.sync_database import SyncDatabase
 
 
-@api.route('/start/send_enrolment_key')
+api = Namespace('start_flow', description='Handle student when they join the Platform.')
+@api.route('/send_enrolment_key')
 class GenerateEnrollmentKey(Resource):
 
-	post_model = api.model('POST_send_enrolment_key', {
+	post_payload_model = api.model('POST_send_enrolment_key', {
 		'mobile': fields.String(required=False),
 		'student_id': fields.Integer(required=False),
 		'from_helpline': fields.Boolean(required=True)
 	})
 
-	@api.expect(post_model)
+	post_response = api.model('POST_send_enrolment_key_response', {
+		'error': fields.Boolean(default=False),
+		'generated':fields.Boolean(default=False),
+		'sent':fields.Boolean(default=False),
+		'enrollment_key':fields.String,
+		'message':fields.String
+	})
+
+	@api.expect(post_payload_model)
 	def post(self):
 
 		args = api.payload
@@ -49,19 +59,19 @@ class GenerateEnrollmentKey(Resource):
 			return message
 
 
-@api.route('/start/requested_callback')
+@api.route('/requested_callback')
 class RequestCallBack(Resource):
 
-	post_model = api.model('POST_requested_callback', {
+	post_payload_model = api.model('POST_requested_callback', {
 		'mobile': fields.String(required=True)
 	})
 
-	@api.expect(post_model)
+	@api.expect(post_payload_model)
 	def post(self):
 
 		args = api.payload
 
-		mobile = args.get('mobile', None)
+		mobile = args.get('mobile')
 
 		# Find the most recently created student with the given mobile
 		# For a student whose record exists, only a new incoming call will be recorded
@@ -71,10 +81,21 @@ class RequestCallBack(Resource):
 		# This student will have the RQC stage
 		if not called_number:
 			student, called_number = Student.create(stage = 'RQC', mobile = mobile)
+		else:
+			student = called_number.student
+			StudentStageTransition.record_stage_change('RQC',student)
 
 		# Record the incoming call in the DB
 		IncomingCalls.create(called_number, call_type=app.config['INCOMING_CALL_TYPE'].rqc)
 
 		return {
 			'success': True
+		}
+
+@api.route('/sync_google_sheet')
+class Sync(Resource):
+	def put(self):
+		sync_datadase = SyncDatabase()
+		return {
+			'success':True
 		}

@@ -1,9 +1,9 @@
 from io import BytesIO
 
-from flask_restplus import Resource, reqparse, abort, marshal_with, fields
+from flask_restplus import Resource, reqparse, abort, marshal_with, fields, Namespace
 from werkzeug.datastructures import FileStorage
 
-from chanakya.src import app, api, db
+from chanakya.src import app, db
 from chanakya.src.models import (
 					Student,
 					IncomingCalls,
@@ -16,8 +16,9 @@ from chanakya.src.helpers.task_helpers import render_pdf_phantomjs
 from chanakya.src.helpers.file_uploader import upload_file_to_s3, FileStorageArgument
 from chanakya.src.helpers.validators import check_option_ids
 
+api = Namespace('questions', description='Handle CRUD and file upload related to questions for the Test')
 
-@api.route('/questions/upload_file')
+@api.route('/upload_file')
 class UploadQuestionImage(Resource):
 
 	post_parser = reqparse.RequestParser(argument_class=FileStorageArgument)
@@ -30,16 +31,18 @@ class UploadQuestionImage(Resource):
 
 		# upload to s3
 		image = args['image']
-		image_url = upload_file_to_s3(image, app.config['S3_QUESTION_IMAGES_BUCKET'])
+		image_url = upload_file_to_s3(app.config['S3_QUESTION_IMAGES_BUCKET'], image)
 
 		return {'image_url': image_url}
 
 
-@api.route('/questions')
+@api.route('')
 class QuestionList(Resource):
 
 	get_response = api.model('GET_questions_list', {
-		'questions_list' : fields.List(fields.Nested(question_obj))
+		'data' : fields.List(fields.Nested(question_obj)),
+		'error':fields.Boolean(default=False),
+		'message':fields.String
 	})
 
 	# Description of POST method
@@ -78,13 +81,22 @@ class QuestionList(Resource):
 	    'options': fields.List(fields.Nested(post_model_option), required=True)
 	})
 
-	post_response = question_obj
+	post_response = api.model('POST_questions_response', {
+		'error': fields.Boolean(default=False),
+		'message':fields.String,
+		'data': fields.Nested(question_obj)
+	})
 
 	@api.marshal_with(get_response)
 	def get(self):
 		questions_list = Questions.query.all()
+		if questions_list:
+			return {
+				"data":questions_list
+			}
 		return {
-			"questions_list":questions_list
+			'error':True,
+			'message':'There no question on platform. Please add some question'
 		}
 
 	@api.marshal_with(post_response)
@@ -93,11 +105,22 @@ class QuestionList(Resource):
 	def post(self):
 		args = api.payload
 		# create the question
+		options = args.get('options')
+		is_any_option_correct = False
+		for option in options:
+			if option['correct']:
+				is_any_option_correct = True
+
+		if not is_any_option_correct:
+			return{
+				'error':True,
+				'message': 'Minimum 1 option should be correct for the question.'
+			}
 		question = Questions.create_question(args)
-		return question
+		return {'data':question}
 
 
-@api.route('/questions/<question_id>')
+@api.route('/<question_id>')
 class Question(Resource):
 
 	get_response = api.model('GET_questions_id_response', {
@@ -116,6 +139,32 @@ class Question(Resource):
 
 	put_payload_model = question_obj
 
+	QUESTIONS_UPDATE_DESCRIPTION = """
+		Possible values of different JSON keys which can be passed:
+
+			- 'id': Id of the Question in Integer,
+			- 'type': ['MCQ', 'Integer Answer'],
+			- 'topic': ['BASIC_MATH', 'ABSTRACT_REASONING', 'NON_VERBAL_LOGICAL_REASONING'],
+			- 'difficulty': ['Easy', 'Medium', 'Hard'],
+			- 'en_text': Question string in English,
+			- 'hi_text': Question string in Hindi,
+
+			- 'options': This will contain an array of options. Every object in the array will look like:
+				[
+				    {
+						'id': Id of the Option in Integer,
+				        'en_text': 'Option in English',
+				        'hi_text': 'Option in Hindi',
+				        'correct': True  if it's correct option for the question else False
+				    }
+				]
+
+			RETURN fields:
+
+			- 'invalid_option_ids' : [ 1, 4, 11, 112, 131, 142, 122] Invalid options ids.
+	"""
+
+
 	@api.marshal_with(get_response)
 	def get(self, question_id):
 		# return a single question
@@ -130,7 +179,7 @@ class Question(Resource):
 
 		return { 'data': question }
 
-
+	@api.doc(description=QUESTIONS_UPDATE_DESCRIPTION)
 	@api.marshal_with(put_response)
 	@api.expect(put_payload_model)
 	def put(self, question_id):

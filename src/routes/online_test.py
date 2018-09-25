@@ -1,21 +1,17 @@
-from flask_restplus import Resource, reqparse, fields
-from chanakya.src.models import EnrolmentKey, StudentContact, Student, Questions, QuestionAttempts,QuestionSet
-from chanakya.src import api, db, app
-from datetime import datetime, timedelta
+from flask_restplus import Resource, reqparse, fields, Namespace
+from chanakya.src import db, app
+from chanakya.src.models import Student, Questions, QuestionAttempts, StudentStageTransition
 
-from chanakya.src.helpers.response_objects import (
-                question_obj,
-                questions_list_obj,
-                question_set
-            )
-from chanakya.src.helpers.file_uploader import upload_pdf_to_s3, FileStorageArgument
-from werkzeug.datastructures import FileStorage
-from chanakya.src.helpers.validators import check_enrollment_key, check_question_ids, check_question_is_in_set
-from chanakya.src.helpers.task_helpers import render_pdf_phantomjs, get_attempts, get_dataframe_from_csv
+from chanakya.src.helpers.response_objects import question_obj, questions_list_obj
+from chanakya.src.helpers.validators import check_enrollment_key, check_question_ids
+
+from chanakya.src.google_sheet_sync.sync_google_sheet import SyncGoogleSheet
+
+api = Namespace('online_test', description='Handle complete online test of students')
 
 
 #Validation for the enrollment key
-@api.route('/test/validate_enrolment_key')
+@api.route('/validate_enrolment_key')
 class EnrollmentKeyValidtion(Resource):
 
     get_parser = reqparse.RequestParser()
@@ -34,7 +30,7 @@ class EnrollmentKeyValidtion(Resource):
         True: already in use or not used till yet,
         False: expired or doesn't exist
     }
-    reason: {
+    'reason': {
         'NOT_USED' : The key is not used and but has been generated,
         'DOES_NOT_EXIST' : The key have not been generated or doesn't exist in the platform,
         'ALREADY_IN_USED' : A Student is already using to give the test,
@@ -52,7 +48,7 @@ class EnrollmentKeyValidtion(Resource):
         return result
 
 
-@api.route('/test/personal_details')
+@api.route('/personal_details')
 class PersonalDetailSubmit(Resource):
 
     post_payload_model = api.model('POST_personal_details', {
@@ -68,21 +64,33 @@ class PersonalDetailSubmit(Resource):
         'enrollment_key_status':fields.String
     })
 
-    PERSONAL_DETAILS_DESCRIPTION = """
-    Response will comprise of two JSON keys. `success` and `enrollment_key_status`
-    Possible values of both are explained below.
-    'success': {
-        True : when the data is added,
-        False : when we can't data can't be added
-    }
-    'enrollment_key_status':{
-        'NOT_USED' : The key is not used and but has been generated,
-        'DOES_NOT_EXIST' : The key have not been generated or doesn't exist in the platform,
-        'ALREADY_IN_USED' : A Student is already using to give the test but you can't post the data to it,
-        'EXPIRED' : Time to generate a new key
-    }
-    """
 
+    PERSONAL_DETAILS_DESCRIPTION = """
+
+        Description:
+
+            Response will comprise of two JSON keys. `success` and `enrollment_key_status`
+            Possible values of both are explained below:
+
+                'success': {
+                    True : when the data is added,
+                    False : when we can't data can't be added
+                }
+                'enrollment_key_status':{
+                    'NOT_USED' : The key is not used and but has been generated,
+                    'DOES_NOT_EXIST' : The key have not been generated or doesn't exist in the platform,
+                    'ALREADY_IN_USED' : A Student is already using to give the test but you can't post the data to it,
+                    'EXPIRED' : Time to generate a new key
+                }
+
+        	Possible values of different JSON keys which can be passed:
+
+                - 'enrollment_key': 'SFD190',
+                - 'name': 'Amar Kumar Sinha',
+                - 'dob': '1997-09-18', [YYYY-MM--DD]
+                - 'mobile_number': '7896121314',
+                - 'gender': 'MALE', ['MALE', 'FEMALE', 'OTHER']
+    """
     @api.marshal_with(post_response)
     @api.doc(description=PERSONAL_DETAILS_DESCRIPTION)
     @api.expect(post_payload_model)
@@ -104,6 +112,8 @@ class PersonalDetailSubmit(Resource):
             student = Student.query.filter_by(id=student_id).first()
             student.update_data(args, [mobile_number])
 
+            StudentStageTransition.record_stage_change('PDS', student)
+
             return {
                 'success':True,
                 'enrollment_key_status': result['reason']
@@ -123,7 +133,7 @@ class PersonalDetailSubmit(Resource):
         }
 
 
-@api.route('/test/start_test')
+@api.route('/start_test')
 class TestStart(Resource):
 
     get_parser = reqparse.RequestParser()
@@ -131,7 +141,7 @@ class TestStart(Resource):
 
     get_response = api.model('GET_start_test_response',{
         'error':fields.Boolean(default=False),
-        'questions':fields.List(fields.Nested(question_obj)),
+        'data':fields.List(fields.Nested(question_obj)),
         'enrollment_key_validation': fields.Boolean(default=True)
     })
 
@@ -163,10 +173,13 @@ class TestStart(Resource):
             # start the test and send the questions generated randomly
             question_set, questions = enrollment.get_question_set()
 
-        return { 'questions':questions }
+        return {
+                'data':questions,
+                'enrollment_key_validation':True
+            }
 
 
-@api.route('/test/end_test')
+@api.route('/end_test')
 class TestEnd(Resource):
 
     post_response =  api.model('POST_end_test_response',{
@@ -185,7 +198,7 @@ class TestEnd(Resource):
 
     post_payload_model = api.model('POST_end_test', {
         'enrollment_key': fields.String(required=True),
-        'question_attempted': fields.List(fields.Nested(question_attempt), required=True)
+        'questions_attempt': fields.List(fields.Nested(question_attempt), required=True)
     })
 
     @api.expect(post_payload_model)
@@ -205,17 +218,8 @@ class TestEnd(Resource):
             }
 
         # Check if only valid question IDs are there
-        questions_attempted = args.get('question_attempted')
-        wrong_question_ids = check_question_ids(questions_attempted)
-        if wrong_question_ids:
-            return {
-                'error':True,
-                'enrollment_key_valid':True,
-                'invalid_question_ids': wrong_question_ids
-            }
-
-        # check if the ids given by the user are among his set only
-        wrong_question_ids = check_question_is_in_set(enrollment, questions_attempted)
+        questions_attempt = args.get('questions_attempt')
+        wrong_question_ids = check_question_ids(enrollment, questions_attempt)
         if wrong_question_ids:
             return {
                 'error':True,
@@ -224,29 +228,32 @@ class TestEnd(Resource):
             }
 
         # Create attempts in the DB
-        QuestionAttempts.create_attempts(questions_attempted, enrollment)
+        QuestionAttempts.create_attempts(questions_attempt, enrollment)
         enrollment.end_test()
+        enrollment.calculate_test_score()
 
         return {
-            'success': True
+            'success': True,
+            'enrollment_key_valid':True
         }
 
 
-@api.route('/test/extra_details')
+@api.route('/extra_details')
 class MoreStudentDetail(Resource):
 
     post_payload_model = api.model('POST_extra_details', {
         'enrollment_key':fields.String(required=True),
         'caste': fields.String(enum=[attr.value for attr in app.config['CASTE']], required=False),
         'religion': fields.String(enum=[attr.value for attr in app.config['RELIGION']], required=False),
-        'monthly_family_member': fields.Integer(required=False),
+        'monthly_family_income': fields.Integer(required=False),
         'total_family_member': fields.Integer(required=False),
         'family_member_income_detail': fields.String(required=False)
     })
 
-    post_response = api.model('POST_extra_detail_response', {
+    post_response = api.model('POST_extra_details_response', {
         'success': fields.Boolean(default=False),
-        'error':fields.Boolean(default=False)
+        'error':fields.Boolean(default=False),
+        'message':fields.String
     })
 
     @api.marshal_with(post_response)
@@ -269,4 +276,7 @@ class MoreStudentDetail(Resource):
         student = enrollment.student
         student.update_data(args)
 
+        StudentStageTransition.record_stage_change('ADS', student)
+
+        syncgooglesheet = SyncGoogleSheet(student)
         return { 'success':True }
