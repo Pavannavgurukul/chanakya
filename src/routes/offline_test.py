@@ -41,8 +41,8 @@ class OfflinePaperList(Resource):
         for i in range(number_sets):
             try:
                 # generate the random sets and get question
-                set_instance, questions = QuestionSet.create_new_set(partner_name)
-
+                set_name =  chr(ord('A') + i)
+                set_instance, questions = QuestionSet.create_new_set(partner_name, set_name)
                 # render pdf
                 question_pdf = render_pdf_phantomjs('question_pdf.bkp.html', set_instance=set_instance, questions=questions)
                 answer_pdf = render_pdf_phantomjs('answer_pdf.html', set_instance=set_instance, questions=questions)

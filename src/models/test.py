@@ -404,6 +404,7 @@ class QuestionSet(db.Model):
     partner_name = db.Column(db.String(200))
     question_pdf_url= db.Column(db.String(200))
     answer_pdf_url= db.Column(db.String(200))
+    set_name = db.Column(db.String(5))
     _question_ids = db.Column(db.String(200))
 
     enrolment_key = db.relationship("EnrolmentKey", back_populates="question_set")
@@ -474,7 +475,7 @@ class QuestionSet(db.Model):
         return main_questions_list
 
     @staticmethod
-    def create_new_set(partner_name=None):
+    def create_new_set(partner_name=None, set_name=None):
         """
             Generates a new set of questions as per the logic defined in the config file.
             The config file mentions how many questions of which topic and difficulty level
@@ -494,7 +495,7 @@ class QuestionSet(db.Model):
         ids = [question.id for question in questions]
 
         # Create a new question set
-        question_set = QuestionSet(partner_name=partner_name)
+        question_set = QuestionSet(partner_name=partner_name, set_name=set_name)
         question_set.set_question_ids(ids)
         db.session.add(question_set)
         db.session.commit()
