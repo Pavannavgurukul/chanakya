@@ -145,7 +145,7 @@ class OfflineCSVProcessing(Resource):
         student_rows = get_dataframe_from_csv(args.get('csv_url'))
         for row in student_rows:
             student_data = {}
-            stage =  'PVC'
+            stage =  'ETA'
 
             student_data['name'] =  row.get('Name')
             student_data['gender'] =  app.config['GENDER'](row.get('Gender').upper())

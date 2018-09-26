@@ -302,7 +302,7 @@ class MoreStudentDetail(Resource):
         student = enrollment.student
         student.update_data(args)
 
-        StudentStageTransition.record_stage_change('ADS', student)
+        StudentStageTransition.record_stage_change('ETA', student)
 
         syncgooglesheet = SyncGoogleSheet(student)
         return { 'success':True }
