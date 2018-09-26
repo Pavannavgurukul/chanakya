@@ -32,7 +32,7 @@ questions_list_obj = api.model('questions_list', {
 
 #offline paper
 question_set = api.model('question_set',{
-    'set_name': fields.Integer(attribute=lambda x: x.id if x else None),
+    'set_id': fields.Integer(attribute=lambda x: x.id if x else None),
     'question_pdf_url': fields.String,
     'answer_pdf_url': fields.String,
     'partner_name': fields.String

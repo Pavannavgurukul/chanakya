@@ -1,4 +1,6 @@
-from chanakya.src.models import EnrolmentKey, Questions
+from datetime import datetime
+from chanakya.src import app
+from chanakya.src.models import EnrolmentKey, Questions, QuestionSet
 
 def check_enrollment_key(enrollment_key):
     """
@@ -234,6 +236,45 @@ def check_option_ids(question_instance,question_dict):
     existing_option_ids = [option.id for option in question_instance.options.all()]
 
     updated_option_ids = [option.get('id') for option in question_dict['options'] if option.get('id')]
-    
+
     wrong_option_ids = [id for id in updated_option_ids if not id in existing_option_ids]
     return wrong_option_ids
+
+def check_csv(student_rows):
+    invalid_rows = []
+    for i, row in enumerate(student_rows):
+        student_data = {}
+        stage =  'ETA'
+
+        student_data['name'] =  row.get('Name')
+        student_data['gender'] =  app.config['GENDER'](row.get('Gender').upper())
+
+        dob = row.get('Date of Birth')
+        if dob:
+            student_data['dob'] =  datetime.strptime(dob, '%d-%m-%Y')
+
+        student_data['religion'] =  app.config['RELIGION'](row.get('Religon'))
+        student_data['caste'] =  app.config['CASTE'](row.get('Caste'))
+        # student_data['state'] =  row.get('State')
+
+        main_contact = row.get('Mobile')
+
+        set_id = int(row.get('Set ID'))
+        set_instance = QuestionSet.query.get(set_id)
+
+
+        if not student_data['name']:
+            invalid_rows.append(i+2)
+        elif not main_contact:
+            if not i in invalid_rows:
+                invalid_rows.append(i+2)
+        elif not set_instance:
+            if not i in invalid_rows:
+                invalid_rows.append(i+2)
+
+        message = """Point to check for validation of CSV:
+            Name of all the student must be there in CSV.
+            Students must provide his contact to get connected.
+            Please check the set ID."""
+
+        return invalid_rows, message

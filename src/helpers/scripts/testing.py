@@ -20,7 +20,7 @@ enrollment_key = response_json['enrollment_key']
 
 
 ########################## PERSONAL DETAIL SUBMITTED ###########################
-personal_details_url = 'http://127.0.0.1:5000/test/personal_details'
+personal_details_url = 'http://127.0.0.1:5000/online_test/personal_details'
 data = {
     'enrollment_key': enrollment_key,
     'name':'Amar Kumar Sinha',
@@ -35,7 +35,7 @@ pprint(resp.json())
 
 
 ##################################### START TEST ###############################
-start_test_url = 'http://127.0.0.1:5000/test/start_test?enrollment_key={0}'.format(enrollment_key)
+start_test_url = 'http://127.0.0.1:5000/online_test/start_test?enrollment_key={0}'.format(enrollment_key)
 resp = requests.get(start_test_url)
 response_json = resp.json()
 pprint(response_json)
@@ -56,10 +56,9 @@ for question in questions:
     data = {}
     if question['type'] == 'MCQ':
         options = question['options']
-        for option in options:
-            if option['correct']:
-                data['question_id'] = question['id']
-                data['selected_option_id'] = option['id']
+
+        data['question_id'] = question['id']
+        data['selected_option_id'] = options[0]['id']
     else:
         options = question['options']
         data['question_id'] = question['id']
@@ -71,7 +70,7 @@ input('End the test? ')
 end_test['questions_attempt'] =  questions_attempted
 pprint(end_test)
 
-end_test_url = "http://127.0.0.1:5000/test/end_test"
+end_test_url = "http://127.0.0.1:5000/online_test/end_test"
 response = requests.post(end_test_url, data=json.dumps(end_test), headers = {'content-type': 'application/json'})
 
 pprint(response.json())
@@ -84,14 +83,14 @@ pprint(response.json())
 
 extra_details = {
     'enrollment_key':enrollment_key,
-    'caste': 'OBC',
+    'caste': 'OBC (Other Backward Classes)',
     'religion': 'Hindu',
     'monthly_family_income': 19000,
     'total_family_member': 7,
     'family_member_income_detail': 'Karlete hai jugaad'
 }
 
-more_details_url = "http://127.0.0.1:5000/test/extra_details"
+more_details_url = "http://127.0.0.1:5000/online_test/extra_details"
 response = requests.post(more_details_url, data=json.dumps(extra_details), headers = {'content-type': 'application/json'})
 pprint(response.json())
 ################################################################################

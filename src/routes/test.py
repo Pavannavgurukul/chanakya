@@ -121,6 +121,22 @@ class TestStart(Resource):
     get_parser = reqparse.RequestParser()
     get_parser.add_argument('enrollment_key', required=True, type=str)
 
+    option_obj = api.model('options',{
+        "id": fields.Integer(required=False),
+        "hi_text": fields.String(required=True),
+        "en_text": fields.String(required=True)
+    })
+
+    question_obj = api.model('questions',{
+        'id': fields.Integer(required=True),
+        'en_text': fields.String(required=True),
+        'hi_text': fields.String(required=True),
+        'difficulty': fields.String(attribute=lambda x: x.difficulty.value if x else None, required=True),
+        'topic': fields.String(attribute=lambda x: x.topic.value if x else None, required=True),
+        'type': fields.String(attribute=lambda x: x.type.value if x else None, required=True),
+        'options': fields.List(fields.Nested(option_obj), required=True)
+    })
+
     get_response = api.model('GET_start_test_response',{
         'error':fields.Boolean(default=False),
         'questions':fields.List(fields.Nested(question_obj)),
