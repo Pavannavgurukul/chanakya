@@ -1,10 +1,11 @@
-from chanakya.src.models import Questions
-from chanakya.src import app
+import os, pandas, requests
+from io import BytesIO
 from bs4 import BeautifulSoup
 from flask import render_template
 from subprocess import Popen, PIPE, STDOUT
-import os, pandas, requests
-from io import BytesIO
+from chanakya import ROOT_DIR
+from chanakya.src import app
+from chanakya.src.models import Questions
 
 
 def render_pdf_phantomjs(template_name , **kwargs):
@@ -18,10 +19,10 @@ def render_pdf_phantomjs(template_name , **kwargs):
             `pdf_string`: Pdf which has been rendered for the template as binary format.
     """
 
-
+    phantomjs_path = ROOT_DIR + '/node_modules/phantomjs/bin/phantomjs'
     # The 'makepdf.js' PhantomJS program takes HTML via stdin and returns PDF binary via stdout
     html = render_template(template_name, **kwargs)
-    p = Popen(['phantomjs', '%s/scripts/pdf.js' % os.path.dirname(os.path.realpath(__file__))], stdout=PIPE, stdin=PIPE, stderr=STDOUT)
+    p = Popen([phantomjs_path, '%s/scripts/pdf.js' % os.path.dirname(os.path.realpath(__file__))], stdout=PIPE, stdin=PIPE, stderr=STDOUT)
     pdf_string = p.communicate(input=html.encode('utf-8'))[0]
     return pdf_string
 
