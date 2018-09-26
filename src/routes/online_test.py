@@ -1,6 +1,6 @@
 from flask_restplus import Resource, reqparse, fields, Namespace
 from chanakya.src import db, app
-from chanakya.src.models import Student, Questions, QuestionAttempts, StudentStageTransition
+from chanakya.src.models import Student, Questions, QuestionAttempts
 
 from chanakya.src.helpers.response_objects import question_obj, questions_list_obj
 from chanakya.src.helpers.validators import check_enrollment_key, check_question_ids
@@ -112,7 +112,7 @@ class PersonalDetailSubmit(Resource):
             student = Student.query.filter_by(id=student_id).first()
             student.update_data(args, [mobile_number])
 
-            StudentStageTransition.record_stage_change('PDS', student)
+            student.stage_change('PDS')
 
             return {
                 'success':True,
@@ -302,7 +302,7 @@ class MoreStudentDetail(Resource):
         student = enrollment.student
         student.update_data(args)
 
-        StudentStageTransition.record_stage_change('ETA', student)
+        student.stage_change('ETA')
 
         syncgooglesheet = SyncGoogleSheet(student)
         return { 'success':True }

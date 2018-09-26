@@ -1,7 +1,7 @@
 from flask_restplus import Resource, reqparse, fields, Namespace
 
 from chanakya.src import app, db
-from chanakya.src.models import Student, IncomingCalls, StudentContact, StudentStageTransition
+from chanakya.src.models import Student, IncomingCalls, StudentContact
 from chanakya.src.google_sheet_sync.sync_database import SyncDatabase
 
 
@@ -83,7 +83,7 @@ class RequestCallBack(Resource):
 			student, called_number = Student.create(stage = 'RQC', mobile = mobile)
 		else:
 			student = called_number.student
-			StudentStageTransition.record_stage_change('RQC',student)
+			student.change_stage('RQC')
 
 		# Record the incoming call in the DB
 		IncomingCalls.create(called_number, call_type=app.config['INCOMING_CALL_TYPE'].rqc)
