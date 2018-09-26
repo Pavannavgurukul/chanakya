@@ -76,7 +76,7 @@ class ChanakyaConfig(object):
         'RQC': 'REQUESTED CALLBACK',
         'EKG': 'ENROLLMENT KEY GENERATED',
         'PDS': 'PERSONAL DETAIL SUBMITTED',
-        'ADS': 'ENTRANCE TEST ANSWERED'
+        'ETA': 'ENTRANCE TEST ANSWERED'
     }
     OUTGOING_SMS = {
         'PVC': 'Kuch message Privilege and verification call ke liye',
