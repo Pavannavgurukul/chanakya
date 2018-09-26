@@ -81,7 +81,7 @@ class Student(db.Model):
 
 
     @staticmethod
-    def offline_student_record(stage, student_data, main_contact, mobile, set):
+    def offline_student_record(stage, student_data, main_contact, set):
         """
             Function helps to add student data who have given the test offline.
             it creates a student instance and then update it's data with contact infomation
@@ -98,11 +98,10 @@ class Student(db.Model):
                 }
 
                 `main_contact` : The number on which we can contact the student
-                `mobile` : An another number which is present as Potential Name
                 `set` : A QuestionSet intance for the student.
         """
 
-        student , call_from = Student.create(stage, main_contact=main_contact, mobile=mobile)
+        student = Student.create(stage, main_contact=main_contact)
 
         student.update_data(student_data)
         student_id = student.id
@@ -263,8 +262,8 @@ class Student(db.Model):
         """
 
         new_stage = app.config['STAGES'][to_stage]
-        student_stage_transition = StudentStageTransition(from_stage=student.stage, to_stage=new_stage, student=self, notes=notes)
-        student.stage = new_stage
+        student_stage_transition = StudentStageTransition(from_stage=self.stage, to_stage=new_stage, student=self, notes=notes)
+        self.stage = new_stage
         db.session.add(student_stage_transition)
         db.session.add(self)
 

@@ -4,7 +4,11 @@
     <meta charset="utf-8">
     <title></title>
   </head>
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
   <style>
+    *{
+      font-family: 'Open Sans', sans-serif;
+    }
     .questions img{
       display: block;
       margin: 0 auto;
@@ -60,8 +64,9 @@
        <div>
         <center>
           <h2>
-            <b>NavGurukul Scholarship Test - Set {{ set_instance.set_name }}</b>
-            <b>Partner : {{ set_instance.partner_name }}</b>
+              NavGurukul Scholarship Test <br>
+              Set {{ set_instance.set_name }} <br>
+              Partner : {{ set_instance.partner_name }}
           </h2>
           <h5>Question Paper</h5>
         </center>
@@ -70,46 +75,49 @@
       {% set strings = 'abcdefghijklmnopqrstuvwxyz' %}
 
       <div style="margin-top:20px; margin-bottom: 20px;">
-        <ol>
         {% for question in questions %}
-          <li style="page-break-inside:avoid !important; ">
-            <table style="page-break-inside:avoid !important; width:100% !important;">
-                {% if question.type.value == 'MCQ' %}
-                      <tr>
-                        <td class="questions">
-                          {{ question.en_text | safe}}
-                          <br>
-                          {{ question.hi_text | safe}}
-                          <!-- tell rishabh here should be something for images also both in models and here -->
-                        </td>
-                      </tr>
+          <table style="page-break-inside:avoid !important; width:100% !important;">
+            <tr>
+              <td valign='top'><b>{{ loop.index }} .</b></td>
+              <td>
+                <table style="page-break-inside:avoid !important; width:100% !important;">
+                    {% if question.type.value == 'MCQ' %}
+                          <tr>
+                            <td class="questions">
+                              {{ question.en_text | safe}}
+                              <br>
+                              {{ question.hi_text | safe}}
+                              <!-- tell rishabh here should be something for images also both in models and here -->
+                            </td>
+                          </tr>
 
-                      {% if question.options.all() %}
-                        <tr style="display:inline-block;">
-                            {% for option in question.options.all() %}
-                                {% if loop.index is divisibleby 2 %}
-                                  <td>
-                                {% else %}
-                                  <td style="float: left; min-width: 400px;">
-                                {% endif %}
-                                      {{ strings[loop.index0] }}) {{ option.en_text | safe}}
-                                  </td>
-                            {% endfor %}
-                        </tr>
-                      {% endif %}
-                {% else %}
-                        <tr>
-                          <td>
-                            {{ question.en_text | safe}}</br>
-                            {{ question.hi_text | safe }}</p>
-                            <p>Iska answer likho answers wale page pe.</p>
-                          </td>
-                        </tr>
-                {% endif %}
-            </table>
-          </li>
+                          {% if question.options.all() %}
+                            <tr style="display:inline-block;">
+                                {% for option in question.options.all() %}
+                                    {% if loop.index is divisibleby 2 %}
+                                      <td>
+                                    {% else %}
+                                      <td style="float: left; min-width: 400px;">
+                                    {% endif %}
+                                          {{ strings[loop.index0] }}) {{ option.en_text | safe}}
+                                      </td>
+                                {% endfor %}
+                            </tr>
+                          {% endif %}
+                    {% else %}
+                            <tr>
+                              <td>
+                                {{ question.en_text | safe}}</br>
+                                {{ question.hi_text | safe }}</p>
+                                <p>Iska answer likho answers wale page pe.</p>
+                              </td>
+                            </tr>
+                    {% endif %}
+                </table>
+              </td>
+            </tr>
+          </table>
         {% endfor %}
-        </ol>
       </div>
     </div>
 

@@ -24,7 +24,7 @@ class StartSync(Resource):
 
     @api.doc(description=START_SYNC_DESCRIPTION)
     @api.expect(put_payload_model)
-	def put(self):
+    def put(self):
         args = api.payload
         direction = args.get(direction)
         if direction == 'chanakya':
