@@ -35,8 +35,10 @@ from chanakya.src.routes.offline_test import api as offline_test_api
 from chanakya.src.routes.online_test import api as online_test_api
 from chanakya.src.routes.questions import api as questions_api
 from chanakya.src.routes.start_flow import api as start_flow_api
+from chanakya.src.routes.sync import api as sync_api
 
 api.add_namespace(offline_test_api, path='/offline_test')
 api.add_namespace(online_test_api, path='/online_test')
 api.add_namespace(questions_api, path='/questions')
 api.add_namespace(start_flow_api, path='/start')
+api.add_namespace(sync_api, path='/sync')

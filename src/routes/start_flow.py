@@ -2,7 +2,6 @@ from flask_restplus import Resource, reqparse, fields, Namespace
 
 from chanakya.src import app, db
 from chanakya.src.models import Student, IncomingCalls, StudentContact
-from chanakya.src.google_sheet_sync.sync_database import SyncDatabase
 
 
 api = Namespace('start_flow', description='Handle student when they join the Platform.')
@@ -90,12 +89,4 @@ class RequestCallBack(Resource):
 
 		return {
 			'success': True
-		}
-
-@api.route('/sync_google_sheet')
-class Sync(Resource):
-	def put(self):
-		sync_datadase = SyncDatabase()
-		return {
-			'success':True
 		}

@@ -5,8 +5,6 @@ from chanakya.src.models import Student, Questions, QuestionAttempts
 from chanakya.src.helpers.response_objects import question_obj, questions_list_obj
 from chanakya.src.helpers.validators import check_enrollment_key, check_question_ids
 
-from chanakya.src.google_sheet_sync.sync_google_sheet import SyncGoogleSheet
-
 api = Namespace('online_test', description='Handle complete online test of students')
 
 
@@ -112,7 +110,7 @@ class PersonalDetailSubmit(Resource):
             student = Student.query.filter_by(id=student_id).first()
             student.update_data(args, [mobile_number])
 
-            student.stage_change('PDS')
+            student.change_stage('PDS')
 
             return {
                 'success':True,
@@ -302,7 +300,6 @@ class MoreStudentDetail(Resource):
         student = enrollment.student
         student.update_data(args)
 
-        student.stage_change('ETA')
+        student.change_stage('ETA')
 
-        syncgooglesheet = SyncGoogleSheet(student)
         return { 'success':True }

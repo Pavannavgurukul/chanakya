@@ -4,7 +4,7 @@ from .config import DATE_TIME_FORMAT
 from chanakya.src import db, app
 from chanakya.src.models import Student
 
-class SyncDatabase:
+class SyncChanakya:
     def __init__(self):
         self.worksheet = get_worksheet()
         self.data_frame = self.worksheet.get_as_df()
