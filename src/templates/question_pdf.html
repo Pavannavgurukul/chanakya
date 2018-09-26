@@ -4,7 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title></title>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
   <style>
+      *{
+        font-family: 'Open Sans', sans-serif;
+      }
       body{
         margin: 20px;
       }
@@ -82,7 +86,8 @@
        <div>
         <center>
           <h1>
-            <b>NavGurukul Scholarship Test - Set {{ set_instance.id }}</b>
+            <b>NavGurukul Scholarship Test - Set {{ set_instance.set_name }}</b>
+            <b>Partner : {{ set_instance.partner_name }}</b>
           </h1>
           <h2>Question Paper</h2>
         </center>

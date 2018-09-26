@@ -81,7 +81,7 @@ class Student(db.Model):
 
 
     @staticmethod
-    def offline_student_record(stage, student_data, main_contact, mobile, set):
+    def offline_student_record(stage, student_data, main_contact, set):
         """
             Function helps to add student data who have given the test offline.
             it creates a student instance and then update it's data with contact infomation
@@ -98,11 +98,10 @@ class Student(db.Model):
                 }
 
                 `main_contact` : The number on which we can contact the student
-                `mobile` : An another number which is present as Potential Name
                 `set` : A QuestionSet intance for the student.
         """
 
-        student , call_from = Student.create(stage, main_contact=main_contact, mobile=mobile)
+        student = Student.create(stage, main_contact=main_contact)
 
         student.update_data(student_data)
         student_id = student.id
@@ -253,6 +252,27 @@ class Student(db.Model):
 
         return message
 
+    def change_stage(self, to_stage, notes=None):
+        """
+            Helps to keep track of student stages in which it has been changed.
+
+            Params:
+                `to_stage`: New student stage.
+                `notes`: (default is None) Notes for the stage change.
+        """
+
+        new_stage = app.config['STAGES'][to_stage]
+        student_stage_transition = StudentStageTransition(from_stage=self.stage, to_stage=new_stage, student=self, notes=notes)
+        self.stage = new_stage
+        db.session.add(student_stage_transition)
+        db.session.add(self)
+
+        if to_stage in app.config['OUTGOING_SMS'].keys():
+            message = app.config['OUTGOING_SMS'][to_stage]
+            contacts =  self.contacts.all()
+            for contact in contacts:
+                contact.send_sms(message)
+        db.session.commit()
 
 class StudentStageTransition(db.Model):
 
@@ -265,28 +285,3 @@ class StudentStageTransition(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'))
     student = db.relationship("Student")
-
-    @staticmethod
-    def record_stage_change(to_stage, student, notes=None):
-        """
-            Helps to keep track of student stages in which it has been changed.
-
-            Params:
-                `from_stage`: Existing student stage.
-                `to_stage`: New student stage.
-                `student`: student instance.
-                `notes`: (default is None) Notes for the stage change.
-        """
-
-        new_stage = app.config['STAGES'][to_stage]
-        student_stage_transition = StudentStageTransition(from_stage=student.stage, to_stage=new_stage, student=student, notes=notes)
-        student.stage = new_stage
-        db.session.add(student_stage_transition)
-        db.session.add(student)
-
-        if to_stage in app.config['OUTGOING_SMS'].keys():
-            message = app.config['OUTGOING_SMS'][to_stage]
-            contacts =  student.contacts.all()
-            for contact in contacts:
-                contact.send_sms(message)
-        db.session.commit()

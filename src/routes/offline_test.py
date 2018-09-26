@@ -10,9 +10,7 @@ from chanakya.src.models import Student, QuestionAttempts, QuestionSet
 from chanakya.src.helpers.response_objects import question_set
 from chanakya.src.helpers.file_uploader import upload_file_to_s3, FileStorageArgument
 from chanakya.src.helpers.task_helpers import render_pdf_phantomjs, get_attempts, get_dataframe_from_csv
-
-from chanakya.src.google_sheet_sync.sync_google_sheet import SyncGoogleSheet
-
+from chanakya.src.helpers.validators import check_csv
 
 api = Namespace('offline_test', description='Handle complete offline test of students')
 
@@ -41,8 +39,8 @@ class OfflinePaperList(Resource):
         for i in range(number_sets):
             try:
                 # generate the random sets and get question
-                set_instance, questions = QuestionSet.create_new_set(partner_name)
-
+                set_name =  chr(ord('A') + i)
+                set_instance, questions = QuestionSet.create_new_set(partner_name, set_name)
                 # render pdf
                 question_pdf = render_pdf_phantomjs('question_pdf.bkp.html', set_instance=set_instance, questions=questions)
                 answer_pdf = render_pdf_phantomjs('answer_pdf.html', set_instance=set_instance, questions=questions)
@@ -106,13 +104,13 @@ class OfflinePaper(Resource):
             'error':True
         }
 
-@api.route('/offline_paper/<id>/upload_results')
+@api.route('/offline_paper/upload_results')
 class OfflineCSVUpload(Resource):
 	post_parser = reqparse.RequestParser(argument_class=FileStorageArgument)
 	post_parser.add_argument('partner_csv', required=True, type=FileStorage, location='files')
 
 	@api.doc(parser=post_parser)
-	def post(self, id):
+	def post(self):
 		args = self.post_parser.parse_args()
 		csv = args.get('partner_csv')
 
@@ -127,7 +125,7 @@ class OfflineCSVUpload(Resource):
 		return {'csv_url': csv_url}
 
 
-@api.route('/offline_paper/<id>/add_results')
+@api.route('/offline_paper/<id>/compute_results')
 class OfflineCSVProcessing(Resource):
     post_payload_model = api.model('POST_add_results', {
         'csv_url': fields.String
@@ -136,16 +134,24 @@ class OfflineCSVProcessing(Resource):
     post_response = api.model('POST_add_results_response', {
         'error':fields.Boolean(default=False),
         'success':fields.Boolean(default=False),
-        'message':fields.String
+        'message':fields.String,
+        'invalid_rows': fields.List(fields.Integer)
     })
     @api.expect(post_payload_model, validate=True)
     def post(self, id):
         args = api.payload
 
         student_rows = get_dataframe_from_csv(args.get('csv_url'))
+        invalid_rows, message = check_csv(student_rows)
+        if invalid_rows:
+            return {
+                'error':True,
+                'invalid_rows': invalid_rows,
+                'message': message
+            }
         for row in student_rows:
             student_data = {}
-            stage =  'PVC'
+            stage =  'ETA'
 
             student_data['name'] =  row.get('Name')
             student_data['gender'] =  app.config['GENDER'](row.get('Gender').upper())
@@ -155,32 +161,12 @@ class OfflineCSVProcessing(Resource):
             # student_data['state'] =  row.get('State')
 
             main_contact = row.get('Mobile')
-            mobile = row.get('Potential Name')
 
-            set = int(row.get('Set'))
-            set_instance = QuestionSet.query.get(set)
-
-
-            if not student_data['name']:
-                return {
-                'error':True,
-                'message':'Name of all the student must be there in CSV'
-                }
-            elif not mobile or not main_contact:
-                return {
-                    'error': True,
-                    'message':'Students must provide his contact to get connected'
-                }
-            elif not set_instance:
-                return {
-                    'error': True,
-                    'message': 'Please check the set id'
-                }
-
-            set_id = set_instance.id
+            set_id = int(row.get('Set ID'))
+            set_instance = QuestionSet.query.get(set_id)
 
             # creating the student, student_contact and an enrollment_key for the student with set_id
-            student, enrollment = Student.offline_student_record(stage, student_data, main_contact, mobile, set_instance)
+            student, enrollment = Student.offline_student_record(stage, student_data, main_contact, set_instance)
 
             attempts = get_attempts(row, enrollment) # this get all the attempts made by student
 
@@ -188,7 +174,6 @@ class OfflineCSVProcessing(Resource):
 
             enrollment.calculate_test_score() #calculating the score of the student
 
-            student = SyncGoogleSheet(student)
         return {
             'success':True
         }
