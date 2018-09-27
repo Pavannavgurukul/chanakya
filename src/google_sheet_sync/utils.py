@@ -171,7 +171,7 @@ def get_all_details_updated_in_df(data_frame, student):
     if enrollment:
         data_frame['Enrollment Key'] = enrollment.key
         data_frame['Test Score'] = enrollment.score
-        data_frame['Test Duration'] = get_test_duration(enrollment)
+        data_frame['Test Duration'] = get_test_duration(enrollment) #calculate test duration
     else:
         data_frame['Enrollment Key'] = None
         data_frame['Test Score'] = None

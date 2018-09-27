@@ -1,5 +1,4 @@
 from datetime import datetime
-# from num
 from .utils import get_worksheet
 from .config import DATE_TIME_FORMAT
 from chanakya.src import db, app
@@ -14,10 +13,16 @@ class SyncChanakya:
     def update_from_sheet_to_chanakya(self):
         """
             Sync the data of student on Google Sheets to Chanakya.
+            The function iterate over each data_frame and search for the student id in Database
+            and update it all one by one.
         """
         # self.data_frame.replace(to_replace='', value=None,inplace=True)
 
+        # createing list of student as a row which was initally column wise
+        # due to pandas dataframe
         student_rows = [row[1] for row in self.data_frame.iterrows()]
+
+        # If there is any data on sheet
         if student_rows:
             for student_row in student_rows:
                 student_id = student_row['Student Id']
@@ -39,7 +44,7 @@ class SyncChanakya:
                 student.total_family_member = student_row['Total Family Member'] or None
                 student.family_member_income_detail = student_row['Family Member Income Detail'] or None
 
-                #something to add new contact or update old contact
+                ## TODO: something to add new contact or update old contact
                 db.session.add(student)
 
             db.session.commit()

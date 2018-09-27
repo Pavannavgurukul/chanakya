@@ -16,15 +16,6 @@ from chanakya.src.helpers.validators import check_csv
 
 api = Namespace('offline_test', description='Handle complete offline test of students')
 
-from flask import render_template
-
-@app.route('/generate')
-def generate():
-    set_name =  chr(ord('A') + 1)
-    partner_name = "PYDS"
-    set_instance, questions = QuestionSet.create_new_set(partner_name, set_name)
-    return render_template('question_pdf.bkp.html', set_instance=set_instance, questions=questions)
-
 
 @api.route('/offline_paper')
 class OfflinePaperList(Resource):
@@ -159,9 +150,11 @@ class OfflineCSVProcessing(Resource):
     def post(self, id):
         args = api.payload
 
+        # creating a dataframe of the csv_url
         student_rows = get_dataframe_from_csv(args.get('csv_url'))
-        invalid_rows = check_csv(student_rows)
 
+        # CSV Validation
+        invalid_rows = check_csv(student_rows)
         if invalid_rows:
             return {
                 'error':True,
@@ -169,6 +162,7 @@ class OfflineCSVProcessing(Resource):
 
             }
 
+        # Adding each student from CSV DataFrame to chanakya
         for row in student_rows:
             student_data = {}
             stage =  'ETA'

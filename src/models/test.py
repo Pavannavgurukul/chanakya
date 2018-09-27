@@ -70,7 +70,6 @@ class EnrolmentKey(db.Model):
                     is_correct = True
             else:
                 option = question.options.first()
-                # using bs4 to convert the html string which is the database to text
                 correct_answer = option.en_text.strip()
                 student_answer = attempt.answer.strip()
 

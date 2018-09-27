@@ -269,6 +269,7 @@ class Student(db.Model):
         db.session.add(student_stage_transition)
         db.session.add(self)
 
+        # Sending the messages for some specific stages
         if to_stage in app.config['OUTGOING_SMS'].keys():
             message = app.config['OUTGOING_SMS'][to_stage]
             contacts =  self.contacts.all()

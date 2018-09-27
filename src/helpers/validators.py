@@ -241,6 +241,18 @@ def check_option_ids(question_instance,question_dict):
     return wrong_option_ids
 
 def check_csv(student_rows):
+    """
+        Helps to validate Offline-Test CSV which is sent by Partners.
+        Params:
+            `student_rows` : A data_frame which contains a the row of each students
+        Return:
+            `invalid_rows` : Which contains list of invalid student row format which look like
+                             {
+                                'student_row': 4 Row number in csv file
+                                'invalid_mcq_question_numbers': [1,4,6,13,18], #18 questions
+                                'message': 'Reason of invalid Rows'
+                             }
+    """
     invalid_rows = []
     for i, row in enumerate(student_rows):
         student_data = {}
@@ -262,8 +274,10 @@ def check_csv(student_rows):
         set_id = int(row.get('Set ID'))
         set_instance = QuestionSet.query.get(set_id)
 
+        # checking offline mcq options are valid options or not
         invalid_mcq_question_numbers = check_offline_mcq_options(row, set_instance)
 
+        # checking the student row is valid or not
         is_invalid = False
         if not name:
             is_invalid = True
@@ -287,6 +301,7 @@ def check_csv(student_rows):
             is_invalid = True
             message = 'MCQ questions answers are out of range!'
 
+        # adding the student row
         if is_invalid:
             validation_data = {
                 'student_row': i + 2, #2 because the googlesheet start with 1 and the student with row 2
@@ -298,16 +313,37 @@ def check_csv(student_rows):
     return invalid_rows
 
 def check_offline_mcq_options(student_row, set_instance):
+    """
+        Helps to validate the MCQ questions option is valid or note
+        Example: Suppose there are 4 options ['A', 'B', 'C', 'D'] and a person enter 'E'
+                 which is not valid.
+        Params:
+            `student_row` : A data_frame which contains a the row of each students
+            `set_instance` : A QuestionSet instance of the Offline Paper
+        Returns:
+            List of invalid questions
+            [1,2,4,5,17,18] in range 1-18
+    """
     questions = set_instance.get_questions()
     invalid_mcq_question_numbers = []
     for i in range(1, 19):
+        # getting the question
         question =  questions[i-1]
         question_number = str(i)
+
+        # option that the student had selected
         option = student_row[question_number]
+
+        # check only if the question is of type mcq
         if question.type.value == "MCQ":
             options = question.options.all()
+
+            #creating list of the options as ['A', 'B', 'C', 'D']
             options_range =[chr(65+i) for i in range(len(options))]
 
+            # checking if the selected option is one of the options available
+            # if not adding it to the list
             if not option in options_range:
                 invalid_mcq_question_numbers.append(i)
+
     return invalid_mcq_question_numbers

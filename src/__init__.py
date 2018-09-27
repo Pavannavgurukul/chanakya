@@ -11,7 +11,10 @@ config = ChanakyaConfig.get_config()
 app.config.from_object(config)
 
 # Initialising Flask-RestPLUS
-api = Api(app)
+if app.config['DEBUG']:
+    api = Api(app)
+else:
+    api = Api(app, doc=False, specs=False)
 
 # Initialising Database & Migration support
 db = SQLAlchemy(app)
@@ -37,6 +40,7 @@ from chanakya.src.routes.questions import api as questions_api
 from chanakya.src.routes.start_flow import api as start_flow_api
 from chanakya.src.routes.sync import api as sync_api
 
+api.namespaces.clear() #Remove default namespace
 api.add_namespace(offline_test_api, path='/offline_test')
 api.add_namespace(online_test_api, path='/online_test')
 api.add_namespace(questions_api, path='/questions')

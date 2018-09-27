@@ -29,14 +29,21 @@ class StartSync(Resource):
     def put(self):
         args = api.payload
         direction = args.get('direction')
+
         if direction == 'chanakya':
+            #Syncing the chanakya from the googlesheet
             SyncChanakya()
         elif direction == 'google_sheet':
+            # getting worksheet and dataframe from the google_sheet
             worksheet = get_worksheet()
             data_frame = worksheet.get_as_df()
+
+            # updating each student to the data_frame from chanakya
             for student in Student.query.all():
                 syncgooglesheet = SyncGoogleSheet(data_frame, student)
                 data_frame = syncgooglesheet.data_frame
+
+            # updating the complete sheet with new data_frame
             worksheet.set_dataframe(data_frame, 'A1')
         return {
             'success':True
