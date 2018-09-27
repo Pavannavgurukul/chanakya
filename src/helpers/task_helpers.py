@@ -20,10 +20,25 @@ def render_pdf_phantomjs(template_name , **kwargs):
     """
 
     phantomjs_path = ROOT_DIR + '/node_modules/phantomjs/bin/phantomjs'
-    # The 'makepdf.js' PhantomJS program takes HTML via stdin and returns PDF binary via stdout
+    pdfjs_path = os.path.dirname(os.path.realpath(__file__)) + '/scripts/pdf.js'
+
+    print(phantomjs_path)
+
     html = render_template(template_name, **kwargs)
-    p = Popen([phantomjs_path, '%s/scripts/pdf.js' % os.path.dirname(os.path.realpath(__file__))], stdout=PIPE, stdin=PIPE, stderr=STDOUT)
-    pdf_string = p.communicate(input=html.encode('utf-8'))[0]
+
+    file = open('ready_for_generation.html', 'w')
+    file.write(html)
+    file.close()
+
+    p = Popen([phantomjs_path, pdfjs_path, 'ready_for_generation.html','ready_for_generation.pdf', 'A4'], stdout=PIPE, stdin=PIPE, stderr=STDOUT)
+
+    p.communicate()
+
+    pdf_string = open('ready_for_generation.pdf', 'rb').read()
+
+    os.remove('ready_for_generation.html')
+    os.remove('ready_for_generation.pdf')
+
     return pdf_string
 
 

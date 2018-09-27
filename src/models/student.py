@@ -42,7 +42,8 @@ class Student(db.Model):
             USAGE:
                 Student.create(stage, **kwargs)
 
-            Returns: student object and also the student_contact object if the called was not the helpline
+            Returns:    student object.
+                        student_contact object if the called was from the helpline.
 
         """
         mobile=kwargs.get('mobile', None)
@@ -81,7 +82,7 @@ class Student(db.Model):
 
 
     @staticmethod
-    def offline_student_record(stage, student_data, main_contact, set):
+    def offline_student_record(stage, student_data, main_contact, alternative_contact, set):
         """
             Function helps to add student data who have given the test offline.
             it creates a student instance and then update it's data with contact infomation
@@ -98,10 +99,11 @@ class Student(db.Model):
                 }
 
                 `main_contact` : The number on which we can contact the student
+                `alternative_contact` : Alternative contact to which we can call to reach student
                 `set` : A QuestionSet intance for the student.
         """
 
-        student = Student.create(stage, main_contact=main_contact)
+        student, call_from = Student.create(stage, main_contact=main_contact, mobile=alternative_contact)
 
         student.update_data(student_data)
         student_id = student.id

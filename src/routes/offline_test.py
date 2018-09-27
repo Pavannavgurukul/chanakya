@@ -1,7 +1,9 @@
 
+
 from datetime import datetime
 from flask_restplus import Resource, reqparse, fields, Namespace
 
+from dateutil.parser import parse as datetime_parser
 from werkzeug.datastructures import FileStorage
 
 from chanakya.src import db, app
@@ -13,6 +15,16 @@ from chanakya.src.helpers.task_helpers import render_pdf_phantomjs, get_attempts
 from chanakya.src.helpers.validators import check_csv
 
 api = Namespace('offline_test', description='Handle complete offline test of students')
+
+from flask import render_template
+
+@app.route('/generate')
+def generate():
+    set_name =  chr(ord('A') + 1)
+    partner_name = "PYDS"
+    set_instance, questions = QuestionSet.create_new_set(partner_name, set_name)
+    return render_template('question_pdf.bkp.html', set_instance=set_instance, questions=questions)
+
 
 @api.route('/offline_paper')
 class OfflinePaperList(Resource):
@@ -127,6 +139,11 @@ class OfflineCSVUpload(Resource):
 
 @api.route('/offline_paper/<id>/compute_results')
 class OfflineCSVProcessing(Resource):
+    invalid_offline_attempts = api.model('invalid_offline_attempts',{
+        'student_row': fields.Integer,
+        'invalid_mcq_question_numbers': fields.List(fields.Integer),
+        'message': fields.String
+    })
     post_payload_model = api.model('POST_add_results', {
         'csv_url': fields.String
     })
@@ -134,39 +151,42 @@ class OfflineCSVProcessing(Resource):
     post_response = api.model('POST_add_results_response', {
         'error':fields.Boolean(default=False),
         'success':fields.Boolean(default=False),
-        'message':fields.String,
-        'invalid_rows': fields.List(fields.Integer)
+        'invalid_rows': fields.List(fields.Nested(invalid_offline_attempts))
     })
+
+    @api.marshal_with(post_response)
     @api.expect(post_payload_model, validate=True)
     def post(self, id):
         args = api.payload
 
         student_rows = get_dataframe_from_csv(args.get('csv_url'))
-        invalid_rows, message = check_csv(student_rows)
+        invalid_rows = check_csv(student_rows)
+
         if invalid_rows:
             return {
                 'error':True,
                 'invalid_rows': invalid_rows,
-                'message': message
+
             }
+
         for row in student_rows:
             student_data = {}
             stage =  'ETA'
 
             student_data['name'] =  row.get('Name')
             student_data['gender'] =  app.config['GENDER'](row.get('Gender').upper())
-            student_data['dob'] =  datetime.strptime(row.get('Date of Birth'), '%d-%m-%Y')
-            student_data['religion'] =  app.config['RELIGION'](row.get('Religon'))
+            student_data['dob'] =  datetime_parser(row.get('Date of Birth'))
+            student_data['religion'] =  app.config['RELIGION'](row.get('Religion'))
             student_data['caste'] =  app.config['CASTE'](row.get('Caste'))
-            # student_data['state'] =  row.get('State')
 
-            main_contact = row.get('Mobile')
+            main_contact = row.get('Main Contact')
+            alternative_contact = row.get('Alternative Contact')
 
             set_id = int(row.get('Set ID'))
             set_instance = QuestionSet.query.get(set_id)
 
             # creating the student, student_contact and an enrollment_key for the student with set_id
-            student, enrollment = Student.offline_student_record(stage, student_data, main_contact, set_instance)
+            student, enrollment = Student.offline_student_record(stage, student_data, main_contact, alternative_contact, set_instance)
 
             attempts = get_attempts(row, enrollment) # this get all the attempts made by student
 

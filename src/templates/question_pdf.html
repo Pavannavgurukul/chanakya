@@ -18,7 +18,7 @@
       tr.inline-block{
         display: inline-block;
       }
-      table.question-display, li.questions{
+      table.question-display, .question-table{
           page-break-inside:avoid !important;
           width:100% !important;
       }
@@ -60,6 +60,9 @@
         text-align: center;
     }
 
+    .question-table{
+      margin: 20px;
+    }
     /*answer form inner table css...*/
     .inner-table{
       width: 100%;
@@ -96,49 +99,52 @@
       {% set strings = 'abcdefghijklmnopqrstuvwxyz' %}
       <!-- question set display -->
       <div class="main">
-        <ol>
         {% for question in questions %}
-          <li class="questions">
-            <br>
-            <table class="question-display">
-                {% if question.type.value == 'MCQ' %}
-                      <tr>
-                        <td colspan="2">
-                          <!-- {{ question.en_text | safe}}
-                          <br> -->
-                          {{ question.hi_text | safe}}
-                        </td>
-                      </tr>
-
-                      {% if question.options.all() %}
-                        <tr class="inline-block">
-                            {% for option in question.options.all() %}
-                                      <tr style="display:inline-block; min-width:45%;">
-                                        <td style="width:20px">{{ strings[loop.index0] }})</td>
-                                        {{ option.hi_text | safe }}
-                                      </tr>
-                            {% endfor %}
-                        </tr>
-                      {% endif %}
-                {% else %}
+        <table class="question-table">
+          <tr>
+            <td width="4%" valign='top'><b>{{ loop.index }} .</b></td>
+            <td>
+              <table class="question-display">
+                  {% if question.type.value == 'MCQ' %}
                         <tr>
-                          <td>
-                            {{ question.hi_text | safe}}</br>
-                            <p>Iska answer likho answers wale page pe.</p>
+                          <td colspan="2">
+                            <!-- {{ question.en_text | safe}}
+                            <br> -->
+                            {{ question.hi_text | safe}}
                           </td>
                         </tr>
-                {% endif %}
-            </table>
-          </li>
+
+                        {% if question.options.all() %}
+                          <tr class="inline-block">
+                              {% for option in question.options.all() %}
+                                        <tr style="display:inline-block; min-width:45%;">
+                                          <td style="width:20px">{{ strings[loop.index0] }})</td>
+                                          {{ option.hi_text | safe }}
+                                        </tr>
+                              {% endfor %}
+                          </tr>
+                        {% endif %}
+                  {% else %}
+                          <tr>
+                            <td>
+                              {{ question.hi_text | safe}}</br>
+                              <p>Iska answer likho answers wale page pe.</p>
+                            </td>
+                          </tr>
+                  {% endif %}
+              </table>
+            </td>
+          </tr>
+        </table>
         {% endfor %}
-        </ol>
 
       </div>
     </div>
 
     <div id="answer">
     	<!-- Question paper set a heading.... -->
-    	<p class="heading">Set {{ set_instance.id }}</p>
+      <p class="heading">Set {{ set_instance.set_name }}</p>
+    	<p class="heading">Set ID: ({{ set_instance.id }})</p>
 
     	<div class="student-info">
     		<table style="width:100%;">

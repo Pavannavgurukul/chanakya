@@ -246,35 +246,68 @@ def check_csv(student_rows):
         student_data = {}
         stage =  'ETA'
 
-        student_data['name'] =  row.get('Name')
-        student_data['gender'] =  app.config['GENDER'](row.get('Gender').upper())
+        name =  row.get('Name')
 
         dob = row.get('Date of Birth')
-        if dob:
-            student_data['dob'] =  datetime.strptime(dob, '%d-%m-%Y')
 
-        student_data['religion'] =  app.config['RELIGION'](row.get('Religon'))
-        student_data['caste'] =  app.config['CASTE'](row.get('Caste'))
-        # student_data['state'] =  row.get('State')
+        religion_enum_values = [enum.value for enum in app.config['RELIGION'].__members__.values()]
+        caste_enum_values = [enum.value for enum in app.config['CASTE'].__members__.values()]
 
-        main_contact = row.get('Mobile')
+        religion = row.get('Religion')
+        caste = row.get('Caste')
+
+        main_contact = row.get('Main Contact')
+        alternative_contact = row.get('Alternative Contact')
 
         set_id = int(row.get('Set ID'))
         set_instance = QuestionSet.query.get(set_id)
 
+        invalid_mcq_question_numbers = check_offline_mcq_options(row, set_instance)
 
-        if not student_data['name']:
-            invalid_rows.append(i+2)
-        elif not main_contact:
-            if not i in invalid_rows:
-                invalid_rows.append(i+2)
+        is_invalid = False
+        if not name:
+            is_invalid = True
+            message = 'Name of the student must be present to call them!'
+        elif not main_contact or not alternative_contact:
+            is_invalid = True
+            message = 'Student must provide his/her contact number to get connected!'
         elif not set_instance:
-            if not i in invalid_rows:
-                invalid_rows.append(i+2)
+            is_invalid = True
+            message = 'Invalid Set Id Please check it again!'
+        elif not dob:
+            is_invalid = True
+            message = 'Date of Birth student is required in DD-MM-YYYY format.'
+        elif not religion in religion_enum_values:
+            is_invalid = True
+            message = 'Religion must be from the list {0}!'.format(religion_enum_values)
+        elif not caste in caste_enum_values:
+            is_invalid = True
+            message = 'Caste must be from the list {0}!'.format(caste_enum_values)
+        elif invalid_mcq_question_numbers:
+            is_invalid = True
+            message = 'MCQ questions answers are out of range!'
 
-        message = """Point to check for validation of CSV:
-            Name of all the student must be there in CSV.
-            Students must provide his contact to get connected.
-            Please check the set ID."""
+        if is_invalid:
+            validation_data = {
+                'student_row': i + 2, #2 because the googlesheet start with 1 and the student with row 2
+                'invalid_mcq_question_numbers': invalid_mcq_question_numbers,
+                'message': message
+            }
+            invalid_rows.append(validation_data)
 
-        return invalid_rows, message
+    return invalid_rows
+
+def check_offline_mcq_options(student_row, set_instance):
+    questions = set_instance.get_questions()
+    invalid_mcq_question_numbers = []
+    for i in range(1, 19):
+        question =  questions[i-1]
+        question_number = str(i)
+        option = student_row[question_number]
+        if question.type.value == "MCQ":
+            options = question.options.all()
+            options_range =[chr(65+i) for i in range(len(options))]
+
+            if not option in options_range:
+                invalid_mcq_question_numbers.append(i)
+    return invalid_mcq_question_numbers
