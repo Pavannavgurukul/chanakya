@@ -1,10 +1,9 @@
 from .utils import get_worksheet, get_student_record_as_dict, get_all_details_updated_in_df
 
 class SyncGoogleSheet:
-    def __init__(self, student):
+    def __init__(self, data_frame, student):
         self.student = student
-        self.worksheet = get_worksheet()
-        self.data_frame = self.worksheet.get_as_df()
+        self.data_frame = data_frame
 
         id_df = self.data_frame.get('Student Id', None)
         # when there is no header or data in the sheet
@@ -21,15 +20,12 @@ class SyncGoogleSheet:
             else:
                 self.update_from_chanakya_to_sheet()
 
-    def update_sheet(self):
+    def replace_NaN(self):
         """
-            Updates the DataFrame NaN value to '' string and then Sync the whole
-            DataFrame to GoogleSheet from Chanakya.
+            Updates the DataFrame NaN value to '' string.
         """
         # for removing NaN values that are set for None values by default in pandas
         self.data_frame.fillna(value='', inplace=True)
-        #update the new DataFrame to sheet
-        self.worksheet.set_dataframe(self.data_frame, 'A1')
 
 
     def create_a_new_record_in_sheet(self):
@@ -41,8 +37,8 @@ class SyncGoogleSheet:
         student_row = get_student_record_as_dict(self.student)
         self.data_frame = self.data_frame.append(student_row, ignore_index=True)
 
-        #updating the sheet with new DataFrame
-        self.update_sheet()
+        # #updating the sheet with new DataFrame
+        self.replace_NaN()
 
 
     def update_from_chanakya_to_sheet(self):
@@ -57,4 +53,4 @@ class SyncGoogleSheet:
 
         updated_data_frame = get_all_details_updated_in_df(student_row_df, self.student)
         self.data_frame.update(updated_data_frame)
-        self.update_sheet()
+        self.replace_NaN()

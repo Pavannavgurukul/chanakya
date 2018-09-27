@@ -2,6 +2,8 @@ from flask_restplus import Resource, reqparse, fields, Namespace
 from chanakya.src import app, db
 from chanakya.src.models import Student
 
+
+from chanakya.src.google_sheet_sync.utils import get_worksheet
 from chanakya.src.google_sheet_sync.sync_database import SyncChanakya
 from chanakya.src.google_sheet_sync.sync_google_sheet import SyncGoogleSheet
 
@@ -30,9 +32,12 @@ class StartSync(Resource):
         if direction == 'chanakya':
             SyncChanakya()
         elif direction == 'google_sheet':
+            worksheet = get_worksheet()
+            data_frame = worksheet.get_as_df()
             for student in Student.query.all():
-                syncgooglesheet = SyncGoogleSheet(student)
-
+                syncgooglesheet = SyncGoogleSheet(data_frame, student)
+                data_frame = syncgooglesheet.data_frame
+            worksheet.set_dataframe(data_frame, 'A1')
         return {
             'success':True
         }

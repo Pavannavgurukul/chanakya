@@ -1,8 +1,8 @@
 import datetime, enum
 from chanakya.src import db, app
-from .student_contact import (StudentContact, IncomingCalls)
-
 from .test import EnrolmentKey
+from .student_contact import StudentContact, IncomingCalls
+
 
 class Student(db.Model):
 

@@ -85,12 +85,12 @@ def get_student_record_as_dict(student):
     student_row = {}
 
     student_row['Name'] = student.name
-    student_row['Gender'] = student.gender.value
+    student_row['Gender'] = student.gender.value if student.gender else None
     student_row['Student Id'] = student.id
-    student_row['Date of Birth'] = student.dob.strftime(DATE_TIME_FORMAT)
-    student_row['Caste'] = student.caste.value
+    student_row['Date of Birth'] = student.dob.strftime(DATE_TIME_FORMAT) if student.dob else None
+    student_row['Caste'] = student.caste.value if student.caste else None
     student_row['Stage'] = student.stage
-    student_row['Religion'] = student.religion.value
+    student_row['Religion'] = student.religion.value if student.religion else None
     student_row['Monthly Family Income'] = student.monthly_family_income
     student_row['Total Family Member'] = student.total_family_member
     student_row['Family Member Income Detail'] = student.family_member_income_detail
@@ -141,7 +141,7 @@ def get_all_details_updated_in_df(data_frame, student):
                 ...
             }
     """
-    enrollment = student.enrollment_keys.all().first()
+    enrollment = student.enrollment_keys.first()
 
     main_contact = student.contacts.filter_by(main_contact=True).first()
     contact = student.contacts.filter_by(main_contact=False).first()
