@@ -37,6 +37,7 @@ class UploadQuestionImage(Resource):
 
 
 @api.route('')
+@api.route('/')
 class QuestionList(Resource):
 
 	get_response = api.model('GET_questions_list', {

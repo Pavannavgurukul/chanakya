@@ -128,7 +128,7 @@ class OfflineCSVUpload(Resource):
 		return {'csv_url': csv_url}
 
 
-@api.route('/offline_paper/<id>/compute_results')
+@api.route('/offline_paper/compute_results')
 class OfflineCSVProcessing(Resource):
     invalid_offline_attempts = api.model('invalid_offline_attempts',{
         'student_row': fields.Integer,
@@ -142,12 +142,13 @@ class OfflineCSVProcessing(Resource):
     post_response = api.model('POST_add_results_response', {
         'error':fields.Boolean(default=False),
         'success':fields.Boolean(default=False),
-        'invalid_rows': fields.List(fields.Nested(invalid_offline_attempts))
+        'invalid_rows': fields.List(fields.Nested(invalid_offline_attempts)),
+        'record_added': fields.Integer
     })
 
     @api.marshal_with(post_response)
     @api.expect(post_payload_model, validate=True)
-    def post(self, id):
+    def post(self):
         args = api.payload
 
         # creating a dataframe of the csv_url
@@ -159,8 +160,9 @@ class OfflineCSVProcessing(Resource):
             return {
                 'error':True,
                 'invalid_rows': invalid_rows,
-
             }
+
+        record_added_to_chanakya = 0
 
         # Adding each student from CSV DataFrame to chanakya
         for row in student_rows:
@@ -181,13 +183,13 @@ class OfflineCSVProcessing(Resource):
 
             # creating the student, student_contact and an enrollment_key for the student with set_id
             student, enrollment = Student.offline_student_record(stage, student_data, main_contact, alternative_contact, set_instance)
-
             attempts = get_attempts(row, enrollment) # this get all the attempts made by student
-
             QuestionAttempts.create_attempts(attempts, enrollment) #storing the attempts to the database
-
             enrollment.calculate_test_score() #calculating the score of the student
 
+            record_added_to_chanakya += 1
+
         return {
-            'success':True
+            'success':True,
+            'record_added': record_added_to_chanakya
         }

@@ -108,8 +108,8 @@
                   {% if question.type.value == 'MCQ' %}
                         <tr>
                           <td colspan="2">
-                            <!-- {{ question.en_text | safe}}
-                            <br> -->
+                            <!-- {{ question.common_text | safe}} <br> -->
+                            {{ question.en_text | safe}}<br>
                             {{ question.hi_text | safe}}
                           </td>
                         </tr>
@@ -119,6 +119,12 @@
                               {% for option in question.options.all() %}
                                         <tr style="display:inline-block; min-width:45%;">
                                           <td style="width:20px">{{ strings[loop.index0] }})</td>
+                                          <!-- {% if option.is_common %}
+                                            {{ option.en_text | safe + '/'}}
+                                            {{ option.hi_text | safe }}
+                                          {% else %}
+                                            {{ option.hi_text | safe }}
+                                          {% endif %} -->
                                           {{ option.hi_text | safe }}
                                         </tr>
                               {% endfor %}
@@ -127,7 +133,9 @@
                   {% else %}
                           <tr>
                             <td>
-                              {{ question.hi_text | safe}}</br>
+                              <!-- {{ question.common_text | safe}} <br> -->
+                              {{ question.en_text | safe}}<br>
+                              {{ question.hi_text | safe}}<br>
                               <p>Iska answer likho answers wale page pe.</p>
                             </td>
                           </tr>
