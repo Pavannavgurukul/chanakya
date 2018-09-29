@@ -1,5 +1,5 @@
-import datetime, enum
-# from .student import Student
+import enum
+from datetime import datetime
 from chanakya.src import db, app, exotel
 
 
@@ -11,7 +11,7 @@ class StudentContact(db.Model):
     contact = db.Column(db.String(10))
     main_contact = db.Column(db.Boolean, default=False)
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'))
-    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     incoming_calls = db.relationship('IncomingCalls', backref='contact', cascade='all, delete-orphan', lazy='dynamic')
     outgoing_calls = db.relationship('OutgoingCalls', backref='contact', cascade='all, delete-orphan', lazy='dynamic')
     outgoing_messages = db.relationship('OutgoingSMS', backref='contact', cascade='all, delete-orphan', lazy='dynamic')
@@ -50,7 +50,7 @@ class OutgoingCalls(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     contact_id = db.Column(db.Integer, db.ForeignKey('student_contacts.id'))
-    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class IncomingCalls(db.Model):
@@ -60,6 +60,7 @@ class IncomingCalls(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     contact_id = db.Column(db.Integer, db.ForeignKey('student_contacts.id'))
     call_type = db.Column(db.Enum(app.config['INCOMING_CALL_TYPE']), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @staticmethod
     def create(student_contact, call_type):
@@ -82,3 +83,4 @@ class OutgoingSMS(db.Model):
     contact_id = db.Column(db.Integer, db.ForeignKey('student_contacts.id'))
     type = db.Column(db.Enum(app.config['OUTGOING_SMS_TYPE']), nullable=False)
     text = db.Column(db.String(300))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

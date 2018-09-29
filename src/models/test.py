@@ -183,6 +183,7 @@ class Questions(db.Model):
     topic = db.Column(db.Enum(app.config['QUESTION_TOPIC']), nullable=False)
     type = db.Column(db.Enum(app.config['QUESTION_TYPE']), nullable=False)
     options = db.relationship('QuestionOptions', backref='question', cascade='all, delete-orphan', lazy='dynamic')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @staticmethod
     def create_question(question_dict):
@@ -339,6 +340,7 @@ class QuestionOptions(db.Model):
     hi_text = db.Column(db.Unicode(2000, collation='utf8mb4_unicode_ci'))
     question_id = db.Column(db.Integer, db.ForeignKey('questions.id'))
     correct = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @staticmethod
     def create_option(**kwargs):
@@ -366,6 +368,7 @@ class QuestionAttempts(db.Model):
     question = db.relationship('Questions')
     selected_option_id = db.Column(db.Integer, db.ForeignKey('question_options.id')) #to store mcq answer
     answer = db.Column(db.String(10)) #to store integer value
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @staticmethod
     def create_attempts(questions_attempts, enrollment):
@@ -400,6 +403,7 @@ class QuestionSet(db.Model):
     __tablename__ = 'sets'
 
     id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     partner_name = db.Column(db.String(200))
     question_pdf_url= db.Column(db.String(200))
     answer_pdf_url= db.Column(db.String(200))

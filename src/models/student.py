@@ -1,4 +1,5 @@
-import datetime, enum
+import enum
+from datetime import datetime
 from chanakya.src import db, app
 from .test import EnrolmentKey
 from .student_contact import StudentContact, IncomingCalls
@@ -9,7 +10,7 @@ class Student(db.Model):
     __tablename__ = 'students'
 
     id = db.Column(db.Integer, primary_key=True)
-    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # personal details fields
     stage = db.Column(db.String(100), nullable=False)
@@ -285,6 +286,6 @@ class StudentStageTransition(db.Model):
     from_stage = db.Column(db.String(100), nullable=False)
     to_stage = db.Column(db.String(100), nullable=False)
     notes = db.Column(db.String(1000))
-    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'))
     student = db.relationship("Student")
