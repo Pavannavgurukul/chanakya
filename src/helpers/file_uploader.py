@@ -3,7 +3,7 @@
 
 """
 
-import boto3
+import boto3, uuid
 from botocore.client import Config
 from werkzeug.datastructures import FileStorage
 from flask_restplus import reqparse
