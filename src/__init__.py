@@ -1,9 +1,10 @@
+import exotel, traceback
 from flask import Flask, make_response, request
 from flask_restplus import Api
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-import exotel
 from chanakya.src.config import ChanakyaConfig
+from chanakya.src.helpers.loggly import Loggly
 
 # Initialising the Flask-App
 app = Flask(__name__)
@@ -15,6 +16,18 @@ if app.config['DEBUG']:
     api = Api(app)
 else:
     api = Api(app, doc=False, specs=False)
+
+
+# Global Exception Handling
+@api.errorhandler(Exception)
+def handle_all_exceptions(e):
+    exc = traceback.format_exc()
+    Loggly.error(exception=e, traceback=exc)
+    
+    return {
+        'message': 'INTERNAL SERVER ERROR',
+        'status_code': 500
+    }
 
 # Initialising Database & Migration support
 db = SQLAlchemy(app)

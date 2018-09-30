@@ -9,7 +9,6 @@ from werkzeug.datastructures import FileStorage
 from flask_restplus import reqparse
 from chanakya.src import app
 from werkzeug.utils import secure_filename
-import uuid
 
 
 def upload_file_to_s3( bucket_name, file=None, folder=None, string=None, filename_extension=None):
