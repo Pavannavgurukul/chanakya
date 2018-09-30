@@ -82,9 +82,21 @@ class EnrolmentKey(db.Model):
                 mark = marks_config[question_difficulty]
                 score+=mark
         print(score)
+
         self.score = score
         db.session.add(self)
         db.session.commit()
+
+        if self.score < app.config['MINIMUM_PASSING_SCORE']:
+            outgoing_sms = app.config['OUTGOING_SMS']['ETF']
+        else:
+            outgoing_sms = app.config['OUTGOING_SMS']['ETP']
+
+        message = outgoing_sms['message']
+        sms_type = app.config['OUTGOING_SMS_TYPE'](outgoing_sms['sms_type'])
+        student = self.student
+        
+        student.send_sms_to_all_numbers(message, sms_type)
 
     def get_question_set(self):
         """

@@ -13,7 +13,7 @@ import json
 HEADERS = {'content-type': 'application/json'}
 
 for question in questions:
-    r = requests.post("http://127.0.0.1:5000/questions", data=json.dumps(question), headers=HEADERS)
+    r = requests.post("http://127.0.0.1:5000/questions/", data=json.dumps(question), headers=HEADERS)
     print('------------------------')
     print(r.content)
     print('------------------------')

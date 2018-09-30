@@ -39,7 +39,10 @@ class SyncChanakya:
                 if student_row['Religion']:
                     student.religion = app.config['RELIGION'](student_row['Religion'])
 
-                student.stage = student_row['Stage'] or None
+                stage = student_row['Stage'] or None
+                if stage and student.stage != stage:
+                    student.change_stage(stage)
+
                 student.monthly_family_income = student_row['Monthly Family Income'] or None
                 student.total_family_member = student_row['Total Family Member'] or None
                 student.family_member_income_detail = student_row['Family Member Income Detail'] or None

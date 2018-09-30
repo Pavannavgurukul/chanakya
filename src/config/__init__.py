@@ -78,9 +78,20 @@ class ChanakyaConfig(object):
         'PDS': 'PERSONAL DETAIL SUBMITTED',
         'ETA': 'ENTRANCE TEST ANSWERED'
     }
+
     OUTGOING_SMS = {
-        'PVC': 'Kuch message Privilege and verification call ke liye',
-        'ADS': 'Kuch message All details Sumitted ke liye'
+        'EKG': {
+                'message' : 'Kuch message Enrollment Key Generated',
+                'sms_type' : 'Enrollment Key Generated'
+            },
+        'ETP': {
+                'message' : 'Kuch message Enrollment Test Passed',
+                'sms_type' : 'Entrance Test Failed'
+            },
+        'ETF': {
+                'message' : 'Kuch message Enrollment Test Failed',
+                'sms_type' : 'Entrance Test Failed'
+            }
     }
 
 

@@ -36,7 +36,6 @@ class UploadQuestionImage(Resource):
 		return {'image_url': image_url}
 
 
-@api.route('')
 @api.route('/')
 class QuestionList(Resource):
 

@@ -37,10 +37,12 @@ def get_test_duration(enrollment):
         return time_taken
     return None
 
-
-def get_student_record_as_dict(student):
+def get_student_data(student_row, student):
     """
-        The function helps to create a dictionary of student data which look like below.
+        The function helps to structured student instance data as given below either in a dictionary
+        or data_frame.
+        In dictionary when we need to create a new record in sheet
+        In data_frame when we need to update a record in the sheet
         {
             'Name':'Amar Kumar Sinha',
             'Student Id': 1,
@@ -50,15 +52,16 @@ def get_student_record_as_dict(student):
             'Date of Birth':18-09-1997,
             'Religion':None,
             'Monthly Family Income':None,
-            'Total Family Member':None,
-            'Family Member Income Detail':None
             ...
             ...
             ...
         }
 
         Params:
-            `student` Student class instance through which we can extract all the link data.
+            `student_row` : Contains Empty dictionary {} when need to create a new record else contains
+                            a data_frame.
+            `student` : Student class instance through which we can extract all the link data.
+
 
         Return:
             The dictionary created below.
@@ -69,20 +72,17 @@ def get_student_record_as_dict(student):
                 'Date of Birth':18-09-1997,
                 'Religion':None,
                 'Total Family Member':None,
-                'Family Member Income Detail':None
                 ...
                 ...
                 ...
             }
     """
-
     enrollment = student.enrollment_keys.first()
 
     main_contact = student.contacts.filter_by(main_contact=True).first()
     contact = student.contacts.filter_by(main_contact=False).first()
 
     number_of_rqc = 0
-    student_row = {}
 
     student_row['Name'] = student.name
     student_row['Gender'] = student.gender.value if student.gender else None
@@ -115,66 +115,3 @@ def get_student_record_as_dict(student):
         student_row['Test Duration'] = None
 
     return student_row
-
-def get_all_details_updated_in_df(data_frame, student):
-    """
-        The function helps to update the data_frame which contains the headers as the key
-        and the data_frame contains the data of the student present in the Google Sheets currently.
-
-
-        Params:
-            `student`: Student class instance through which we can extract all the link data.
-            `data_frame`: Contains the student data present on Google Sheets as a DataFrame object.
-
-        Return:
-            The updated DataFrame object.
-            {
-                'Name':'Amar Kumar Sinha',
-                'Student Id': 1,
-                'Gender': 'MALE',
-                'Date of Birth':18-09-1997,
-                'Religion':None,
-                'Total Family Member':None,
-                'Family Member Income Detail':None
-                ...
-                ...
-                ...
-            }
-    """
-    enrollment = student.enrollment_keys.first()
-
-    main_contact = student.contacts.filter_by(main_contact=True).first()
-    contact = student.contacts.filter_by(main_contact=False).first()
-
-
-    data_frame['Name'] = student.name
-    data_frame['Gender'] = student.gender.value
-    data_frame['Date of Birth'] = student.dob.strftime(DATE_TIME_FORMAT)
-    data_frame['Caste'] = student.caste.value
-    data_frame['Stage'] = student.stage
-    data_frame['Religion'] = student.religion.value
-    data_frame['Monthly Family Income'] = student.monthly_family_income
-    data_frame['Total Family Member'] = student.total_family_member
-    data_frame['Family Member Income Detail'] = student.family_member_income_detail
-    number_of_rqc = 0
-
-    if main_contact:
-        number_of_rqc += main_contact.incoming_calls.filter_by(call_type = app.config['INCOMING_CALL_TYPE'].rqc).count()
-        data_frame['Main Contact'] =  main_contact.contact
-
-    if contact:
-        number_of_rqc += contact.incoming_calls.filter_by(call_type = app.config['INCOMING_CALL_TYPE'].rqc).count()
-        data_frame['Alternative Contact'] = contact.contact
-
-    data_frame['Number Incoming RQC'] = number_of_rqc
-
-    if enrollment:
-        data_frame['Enrollment Key'] = enrollment.key
-        data_frame['Test Score'] = enrollment.score
-        data_frame['Test Duration'] = get_test_duration(enrollment) #calculate test duration
-    else:
-        data_frame['Enrollment Key'] = None
-        data_frame['Test Score'] = None
-        data_frame['Test Duration'] = None
-
-    return data_frame

@@ -17,17 +17,23 @@ class StudentContact(db.Model):
     outgoing_messages = db.relationship('OutgoingSMS', backref='contact', cascade='all, delete-orphan', lazy='dynamic')
 
 
-    def send_sms(self, message):
+    def send_sms(self, message, sms_type):
         """
             For sending the message to number associtated with this instance using exotel api.
 
             Params:
-                `message` - Contains the message that need to be sent str required
+                `message` : Contains the message that need to be sent str required
+                `sms_type` : Sending SMS Type
 
             Usage: student_contact.send_sms(message)
 
         """
         exotel.sms(app.config.get("EXOTEL_SMS_NUM"), self.contact, message)
+
+        # recording the outgoing sms in chanaya
+        outgoing_sms = OutgoingSMS(contact_id=self.id, type=sms_type, text=message)
+        db.session.add(outgoing_sms)
+        db.session.commit()
 
     @staticmethod
     def create(contact,student_id,main_contact = False):
@@ -82,5 +88,5 @@ class OutgoingSMS(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     contact_id = db.Column(db.Integer, db.ForeignKey('student_contacts.id'))
     type = db.Column(db.Enum(app.config['OUTGOING_SMS_TYPE']), nullable=False)
-    text = db.Column(db.String(300))
+    text = db.Column(db.String(1000), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

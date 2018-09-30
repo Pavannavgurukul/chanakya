@@ -197,7 +197,7 @@ class Student(db.Model):
     def send_enrolment_key(self, from_helpline):
         """
             Method is used to send valid enrollment key to the student if exist
-            else it will generate a new enrollment key and send it to the user
+            else it will generate a new enrollment key and send it to the user.
 
             USAGE:
                 instance.send_enrollment_key(from_helpline)
@@ -244,20 +244,33 @@ class Student(db.Model):
             }
 
         print(enrollment.key)
+
         # getting the test that we have to send the student
         enrollment_message = app.config.get("TEST_ENROLL_MSG").format(test_url=enrollment.key)
 
-        # getting all the contact of the student
-        student_contacts = StudentContact.query.filter_by(student_id=student_id).all()
-        #send enrollment message to all the contact linked to the student
-        for contact in student_contacts:
-            contact.send_sms(enrollment_message)
+        sms_type=app.config['OUTGOING_SMS_TYPE'].enrolment_key_gen
+
+        self.send_sms_to_all_numbers(enrollment_message, sms_type)
 
         return message
 
+    def send_sms_to_all_numbers(self, message, sms_type):
+        """
+            Helps to send sms to all the numbers attached to the student record.
+            Params
+                `message` : Contains the message that needs to be sent to the student.
+                `sms_type` : Type of the sms defined in enums OUTGOING_SMS_TYPE in config.
+        """
+
+        contacts =  self.contacts.all()
+        for contact in contacts:
+            contact.send_sms(message, sms_type)
+
     def change_stage(self, to_stage, notes=None):
         """
-            Helps to keep track of student stages in which it has been changed.
+            Helps to keep track of student stages in which it has been changed and
+            also send sms when reached to specific stages defined in OUTGOING_SMS
+            in config.
 
             Params:
                 `to_stage`: New student stage.
@@ -272,10 +285,13 @@ class Student(db.Model):
 
         # Sending the messages for some specific stages
         if to_stage in app.config['OUTGOING_SMS'].keys():
-            message = app.config['OUTGOING_SMS'][to_stage]
-            contacts =  self.contacts.all()
-            for contact in contacts:
-                contact.send_sms(message)
+            outgoing_sms = app.config['OUTGOING_SMS'][to_stage]
+
+            message = outgoing_sms['message']
+            sms_type = app.config['OUTGOING_SMS_TYPE'](outgoing_sms['sms_type'])
+
+            self.send_sms_to_all_numbers(message, sms_type)
+
         db.session.commit()
 
 class StudentStageTransition(db.Model):

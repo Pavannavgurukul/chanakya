@@ -1,4 +1,4 @@
-from .utils import get_worksheet, get_student_record_as_dict, get_all_details_updated_in_df
+from .utils import get_worksheet, get_student_data
 
 class SyncGoogleSheet:
     def __init__(self, data_frame, student):
@@ -34,7 +34,7 @@ class SyncGoogleSheet:
         """
 
         # student row as dictionary to add in the DataFrame
-        student_row = get_student_record_as_dict(self.student)
+        student_row = get_student_data({}, self.student)
         self.data_frame = self.data_frame.append(student_row, ignore_index=True)
 
         # #updating the sheet with new DataFrame
@@ -52,6 +52,6 @@ class SyncGoogleSheet:
         student_row_df = self.data_frame[id_df == student_id]
 
         # getting the updated data_frame and adding to data_frame
-        updated_data_frame = get_all_details_updated_in_df(student_row_df, self.student)
+        updated_data_frame = get_student_data(student_row, student)(student_row_df, self.student)
         self.data_frame.update(updated_data_frame)
         self.replace_NaN()
