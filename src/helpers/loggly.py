@@ -57,7 +57,7 @@ class Loggly(object):
 
     @staticmethod
     def critical(exception, traceback):
-        """Log verbose level messages."""
+        """Log critical level messages."""
 
         logger = Loggly.create_logger(traceback, logging.CRITICAL)
         logger.critical(exception, exc_info=True)
